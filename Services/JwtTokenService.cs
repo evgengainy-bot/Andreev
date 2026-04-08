@@ -4,46 +4,41 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Andreev.Models;
 
-namespace Andreev.Services;
-
-public interface IJwtTokenService
+namespace Andreev.Services
 {
-    string GenerateToken(AppUser user);
-}
-
-public class JwtTokenService : IJwtTokenService
-{
-    private readonly JwtSettings _jwtSettings;
-
-    public JwtTokenService(JwtSettings jwtSettings)
+    public interface IJwtTokenService
     {
-        _jwtSettings = jwtSettings;
+        string GenerateToken(AppUser user);
     }
 
-    public string GenerateToken(AppUser user)
+    public class JwtTokenService : IJwtTokenService
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+        private readonly JwtSettings _jwtSettings;
 
-        var claims = new List<Claim>
+        public JwtTokenService(JwtSettings jwtSettings)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
+            _jwtSettings = jwtSettings;
+        }
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+        public string GenerateToken(AppUser user)
         {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationInMinutes),
-            Issuer = _jwtSettings.Issuer,
-            Audience = _jwtSettings.Audience,
-            SigningCredentials = new SigningCredentials(
-                new SymmetricSecurityKey(key),
-                SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Name, user.Name),
+                    new Claim(ClaimTypes.Email, user.Email)
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
     }
 }
