@@ -9,26 +9,25 @@ using Andreev.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Настройка Kestrel для доступа с других устройств
+
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.ListenAnyIP(5000);
 });
 
-// Добавляем контекст базы данных
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Настройки JWT
+
 var jwtSettings = new JwtSettings();
 builder.Configuration.GetSection("JwtSettings").Bind(jwtSettings);
 builder.Services.AddSingleton(jwtSettings);
 
-// Добавляем сервисы
+
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 
-// Настройка аутентификации JWT
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
